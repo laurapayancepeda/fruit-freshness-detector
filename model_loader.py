@@ -13,18 +13,16 @@ def load_model():
     MODEL_LOCAL = "best.pt"
     HF_REPO_ID = "laurapayancepe/fruit-freshness-model"
     HF_FILENAME = "best.pt"
-    HF_TOKEN = os.getenv("HF_TOKEN")  # secure, no hardcoding
+    HF_TOKEN = os.getenv("HF_TOKEN")
 
-    # Download model if missing
     if not os.path.exists(MODEL_LOCAL):
         st.info("Downloading YOLO model from Hugging Face...")
         hf_hub_download(
             repo_id=HF_REPO_ID,
             filename=HF_FILENAME,
             local_dir=".",
-            token=HF_TOKEN,  # None if repo is public
+            token=HF_TOKEN,
         )
 
-    # Load YOLO
     model = YOLO(MODEL_LOCAL)
     return model
