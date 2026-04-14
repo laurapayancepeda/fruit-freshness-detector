@@ -49,7 +49,6 @@ elif input_method == "Capture Photo":
 
 
 # Live Webcam
-
 elif input_method == "Live Webcam":
     st.write("Starting live webcam detection (local only)...")
 
@@ -60,14 +59,18 @@ elif input_method == "Live Webcam":
 
         def recv(self, frame):
             img = frame.to_ndarray(format="bgr24")
+
+            # YOLO inference
             results = model(img)
             annotated_frame = results[0].plot(conf=0.5)
 
             # Smooth predicted classes
             pred_classes = [
                 model.names[int(cls)] for cls in results[0].boxes.cls.tolist()
-            ]
+            ] if results[0].boxes is not None else []
+
             self.recent_classes.append(pred_classes)
+
             all_recent = [c for sublist in self.recent_classes for c in sublist]
             if all_recent:
                 self.current_class = max(set(all_recent), key=all_recent.count)
@@ -78,8 +81,19 @@ elif input_method == "Live Webcam":
         ctx = webrtc_streamer(
             key="fruit-detector",
             video_processor_factory=WebcamProcessor,
-            media_stream_constraints={"video": True, "audio": False},
-            async_processing=True,
+            media_stream_constraints={
+                "video": True,
+                "audio": False
+            },
+
+            async_processing=False,
+
+            rtc_configuration={
+                "iceServers": [
+                    {"urls": ["stun:stun.l.google.com:19302"]},
+                    {"urls": ["stun:stun1.l.google.com:19302"]}
+                ]
+            },
         )
 
         if ctx.video_processor:
@@ -91,9 +105,16 @@ elif input_method == "Live Webcam":
         st.warning("Live webcam failed. Falling back to Capture Photo.")
 
         captured_image = st.camera_input("Take a photo")
+
         if captured_image is not None:
             img = Image.open(captured_image)
             img_array = np.array(img)
+
             results = model(img_array)
             annotated = results[0].plot(conf=0.5)
-            st.image(annotated, caption="Detection Result", use_column_width=True)
+
+            st.image(
+                annotated,
+                caption="Detection Result",
+                use_container_width=True
+            )
